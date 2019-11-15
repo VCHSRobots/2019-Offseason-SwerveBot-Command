@@ -12,8 +12,18 @@ import edu.wpi.first.wpilibj.command.Command;
 import edu.wpi.first.wpilibj.command.Scheduler;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import frc.robot.commands.ExampleCommand;
-import frc.robot.subsystems.ExampleSubsystem;
+
+//import org.frcteam2910.c2019.autonomous.AutonomousSelector;
+//import org.frcteam2910.c2019.autonomous.AutonomousTrajectories;
+//import org.frcteam2910.c2019.subsystems.*;
+//import org.frcteam2910.c2019.vision.api.Gamepiece;
+
+import frc.robot.subsystems.*;
+
+import org.frcteam2910.common.robot.drivers.Limelight;
+import org.frcteam2910.common.robot.drivers.NavX;
+import org.frcteam2910.common.robot.subsystems.SubsystemManager;
+
 
 /**
  * The VM is configured to automatically run this class, and to call the
@@ -23,109 +33,84 @@ import frc.robot.subsystems.ExampleSubsystem;
  * project.
  */
 public class Robot extends TimedRobot {
-  public static ExampleSubsystem m_subsystem = new ExampleSubsystem();
-  public static OI m_oi;
+  private static final double UPDATE_DT = 5e-3; // 5 ms
 
-  Command m_autonomousCommand;
-  SendableChooser<Command> m_chooser = new SendableChooser<>();
+    private final SubsystemManager subsystemManager = new SubsystemManager(
+            DrivetrainSubsystem.getInstance()
+    );
 
-  /**
-   * This function is run when the robot is first started up and should be
-   * used for any initialization code.
-   */
-  @Override
-  public void robotInit() {
-    m_oi = new OI();
-    m_chooser.setDefaultOption("Default Auto", new ExampleCommand());
-    // chooser.addOption("My Auto", new MyAutoCommand());
-    SmartDashboard.putData("Auto mode", m_chooser);
-  }
+    private static final OI oi = new OI();
 
-  /**
-   * This function is called every robot packet, no matter the mode. Use
-   * this for items like diagnostics that you want ran during disabled,
-   * autonomous, teleoperated and test.
-   *
-   * <p>This runs after the mode specific periodic functions, but before
-   * LiveWindow and SmartDashboard integrated updating.
-   */
-  @Override
-  public void robotPeriodic() {
-  }
+    //private AutonomousTrajectories autonomousTrajectories = new AutonomousTrajectories(DrivetrainSubsystem.CONSTRAINTS);
+    //private AutonomousSelector autonomousSelector = new AutonomousSelector(autonomousTrajectories);
 
-  /**
-   * This function is called once each time the robot enters Disabled mode.
-   * You can use it to reset any subsystem information you want to clear when
-   * the robot is disabled.
-   */
-  @Override
-  public void disabledInit() {
-  }
+    private Command autonomousCommand = null;
 
-  @Override
-  public void disabledPeriodic() {
-    Scheduler.getInstance().run();
-  }
-
-  /**
-   * This autonomous (along with the chooser code above) shows how to select
-   * between different autonomous modes using the dashboard. The sendable
-   * chooser code works with the Java SmartDashboard. If you prefer the
-   * LabVIEW Dashboard, remove all of the chooser code and uncomment the
-   * getString code to get the auto name from the text box below the Gyro
-   *
-   * <p>You can add additional auto modes by adding additional commands to the
-   * chooser code above (like the commented example) or additional comparisons
-   * to the switch structure below with additional strings & commands.
-   */
-  @Override
-  public void autonomousInit() {
-    m_autonomousCommand = m_chooser.getSelected();
-
-    /*
-     * String autoSelected = SmartDashboard.getString("Auto Selector",
-     * "Default"); switch(autoSelected) { case "My Auto": autonomousCommand
-     * = new MyAutoCommand(); break; case "Default Auto": default:
-     * autonomousCommand = new ExampleCommand(); break; }
-     */
-
-    // schedule the autonomous command (example)
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.start();
+    public Robot() {
+        //oi.bindButtons(autonomousSelector);
     }
-  }
 
-  /**
-   * This function is called periodically during autonomous.
-   */
-  @Override
-  public void autonomousPeriodic() {
-    Scheduler.getInstance().run();
-  }
-
-  @Override
-  public void teleopInit() {
-    // This makes sure that the autonomous stops running when
-    // teleop starts running. If you want the autonomous to
-    // continue until interrupted by another command, remove
-    // this line or comment it out.
-    if (m_autonomousCommand != null) {
-      m_autonomousCommand.cancel();
+    public static OI getOi() {
+        return oi;
     }
-  }
 
-  /**
-   * This function is called periodically during operator control.
-   */
-  @Override
-  public void teleopPeriodic() {
-    Scheduler.getInstance().run();
-  }
+    @Override
+    public void robotInit() {
+        SmartDashboard.putBoolean("Limelight Calibration Mode", false);
 
-  /**
-   * This function is called periodically during test mode.
-   */
-  @Override
-  public void testPeriodic() {
-  }
+        subsystemManager.enableKinematicLoop(UPDATE_DT);
+    }
+
+    @Override
+    public void robotPeriodic() {
+        subsystemManager.outputToSmartDashboard();
+
+        SmartDashboard.putNumber("Robot Angle",
+                Superstructure.getInstance().getGyroscope().getAngle().toDegrees());
+        SmartDashboard.putNumber("Gyro Pitch",
+                Math.toDegrees(Superstructure.getInstance().getGyroscope().getAxis(NavX.Axis.ROLL)));
+    }
+
+    @Override
+    public void teleopInit() {
+//        if (autonomousCommand != null) {
+//            autonomousCommand.cancel();
+//            autonomousCommand = null;
+//        }
+    }
+
+    @Override
+    public void teleopPeriodic() {
+        Scheduler.getInstance().run();
+    }
+
+    @Override
+    public void autonomousInit() {
+      /*  
+      if (autonomousCommand != null) {
+            autonomousCommand.cancel();
+        }
+
+        autonomousCommand = autonomousSelector.getCommand();
+        autonomousCommand.start();
+        */
+    }
+
+    @Override
+    public void autonomousPeriodic() {
+        //Scheduler.getInstance().run();
+    }
+
+    @Override
+    public void disabledInit() {
+//        if (autonomousCommand != null) {
+//            autonomousCommand.cancel();
+//            autonomousCommand = null;
+//        }
+//        Scheduler.getInstance().removeAll();
+    }
+
+    @Override
+    public void disabledPeriodic() {
+    }
 }
